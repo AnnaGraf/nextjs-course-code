@@ -1,41 +1,40 @@
+import Head from 'next/head';
+import { MongoClient } from 'mongodb'
 import MeetupList from '../components/meetups/MeetupList';
-
-const DUMMY_MEETUPS = [
-  {
-    id: 'm1',
-    title: 'Nature',
-    image:
-      'https://media.istockphoto.com/id/1322277517/photo/wild-grass-in-the-mountains-at-sunset.jpg?s=612x612&w=0&k=20&c=6mItwwFFGqKNKEAzv0mv6TaxhLN3zSE43bWmFN--J5w=',
-    address: 'Some Address 23',
-    description: 'This is a meetup.',
-  },
-  {
-    id: 'm2',
-    title: 'Nature',
-    image:
-      'https://media.istockphoto.com/id/1322277517/photo/wild-grass-in-the-mountains-at-sunset.jpg?s=612x612&w=0&k=20&c=6mItwwFFGqKNKEAzv0mv6TaxhLN3zSE43bWmFN--J5w=',
-    address: 'Some Address 23',
-    description: 'This is a meetup.',
-  },
-  {
-    id: 'm3 ',
-    title: 'Nature',
-    image:
-      'https://media.istockphoto.com/id/1322277517/photo/wild-grass-in-the-mountains-at-sunset.jpg?s=612x612&w=0&k=20&c=6mItwwFFGqKNKEAzv0mv6TaxhLN3zSE43bWmFN--J5w=',
-    address: 'Some Address 23',
-    description: 'This is a meetup.',
-  },
-];
+import { Fragment } from 'react';
 
 function HomePage(props) {
-  return <MeetupList meetups={props.meetups} />;
+  return (
+  <Fragment>
+    <Head>
+      <title>React Meetups</title>
+      <meta name='description' content='descriptive text of this webbapp'></meta>
+    </Head>
+    <MeetupList meetups={props.meetups} />
+    </Fragment>
+  );
 }
 
 export async function getStaticProps() {
-  // fetch data
+
+  const client = await MongoClient.connect('mongodb+srv://anna-g:WzNkjf24fOleGqB5@cluster0.esmifw5.mongodb.net/meetups?retryWrites=true&w=majority');
+    const db = client.db();
+
+    const meetupsCollection = db.collection('meetups');
+    
+    const meetups = await meetupsCollection.find().toArray();
+
+    client.close();
+
+
   return {
     props: {
-      meetups: DUMMY_MEETUPS,
+      meetups: meetups.map(meetup => ({
+        title: meetup.title,
+        address: meetup.address,
+        image: meetup.image,
+        id: meetup._id.toString(),
+      })),
     },
     revalidate: 10, //reload every 10th second
   };

@@ -1,46 +1,75 @@
+import { MongoClient, ObjectId } from 'mongodb';
+import Head from 'next/head';
 import { Fragment } from 'react';
 import MeetupDetail from '../components/meetups/MeetupDetail';
 
-function MeetupDetails(){
-  return(
-    <MeetupDetail 
-      image='https://media.istockphoto.com/id/1322277517/photo/wild-grass-in-the-mountains-at-sunset.jpg?s=612x612&w=0&k=20&c=6mItwwFFGqKNKEAzv0mv6TaxhLN3zSE43bWmFN--J5w='
-      title='A title' 
-      address ='Some Street 45' 
-      description ='One meetup' /> 
+function MeetupDetails(props) {
+  return (
+    <Fragment>
+      <Head>
+        <title>React Meetups - {props.meetupData.title}</title>
+        <meta
+          name="description"
+          content={props.meetupData.description}
+        ></meta>
+      </Head>
+      <MeetupDetail
+        image={props.meetupData.image}
+        title={props.meetupData.title}
+        address={props.meetupData.address}
+        description={props.meetupData.description}
+      />{' '}
+    </Fragment>
   );
 }
 
-export async function getStaticPaths(){
+export async function getStaticPaths() {
+  const client = await MongoClient.connect(
+    'mongodb+srv://anna-g:WzNkjf24fOleGqB5@cluster0.esmifw5.mongodb.net/meetups?retryWrites=true&w=majority'
+  );
+  const db = client.db();
+
+  const meetupsCollection = db.collection('meetups');
+
+  const meetups = await meetupsCollection.find({}, { _id: 1 }).toArray();
+
+  client.close();
+
   return {
     fallback: false,
-    paths: [
-      { params: {
-        meetupId: 'm1',
-      }, },
-      { params: {
-        meetupId: 'm2',
-      }, },
-    ],
-  }
+    paths: meetups.map((meetup) => ({
+      params: { meetupId: meetup._id.toString() },
+    })),
+  };
 }
 
 export async function getStaticProps(context) {
   // fetch data
-  const meetupId = context.params.meetupId; 
+  const meetupId = context.params.meetupId;
+
+  const client = await MongoClient.connect(
+    'mongodb+srv://anna-g:WzNkjf24fOleGqB5@cluster0.esmifw5.mongodb.net/meetups?retryWrites=true&w=majority'
+  );
+  const db = client.db();
+
+  const meetupsCollection = db.collection('meetups');
+
+  const selectedMeetup = await meetupsCollection.findOne({
+    _id: ObjectId(meetupId),
+  });
+  client.close();
 
   return {
     props: {
       meetupData: {
-        image:'https://media.istockphoto.com/id/1322277517/photo/wild-grass-in-the-mountains-at-sunset.jpg?s=612x612&w=0&k=20&c=6mItwwFFGqKNKEAzv0mv6TaxhLN3zSE43bWmFN--J5w=',
-        id: meetupId,
-        title:'A title', 
-        address:'Some Street 45', 
-        description:'One meetup', 
+        id: selectedMeetup._id.toString(),
+        title: selectedMeetup.title,
+        address: selectedMeetup.address,
+        image: selectedMeetup.image,
+        description: selectedMeetup.description,
       },
     },
-    revalidate: 10, //reload every 10th second
   };
 }
 
-export default MeetupDetails; 
+export default MeetupDetails;
